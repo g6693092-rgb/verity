@@ -7,4 +7,4 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/your-org/verity-backend:latest
+          image: ghcr.io/g6693092-rgb/verity-backend:latest

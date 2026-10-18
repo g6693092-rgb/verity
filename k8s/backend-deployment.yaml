@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/<your-org>/verity-backend:latest
+          image: ghcr.io/g6693092-rgb/verity-backend:latest
           imagePullPolicy: Always
           ports:
             - name: http
