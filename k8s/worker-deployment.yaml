@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: verity-worker
+  namespace: verity
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: verity-worker }
+  template:
+    metadata:
+      labels: { app: verity-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/<your-org>/verity-backend:latest
+          command: ["node", "dist/queue/worker.js"]
+          env:
+            - { name: REDIS_URL, value: redis://redis:6379 }
+          envFrom:
+            - secretRef: { name: verity-secrets }
+          resources:
+            requests: { cpu: 200m, memory: 256Mi }
+            limits: { cpu: 800m, memory: 1Gi }

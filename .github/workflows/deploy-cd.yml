@@ -1,0 +1,96 @@
+name: CI/CD deploy
+
+on:
+  push:
+    branches: [main, staging]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/verity-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test -- --runInBand
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  deploy-to-k8s:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-kubectl@v4
+      - name: Configure kubeconfig
+        env:
+          KUBE_CONFIG: ${{ github.ref == 'refs/heads/main' && secrets.PROD_KUBE_CONFIG || secrets.STAGING_KUBE_CONFIG }}
+        run: printf '%s' "$KUBE_CONFIG" | base64 --decode > "$RUNNER_TEMP/kubeconfig"
+      - name: Update image and wait
+        env:
+          KUBECONFIG: ${{ runner.temp }}/kubeconfig
+        run: |
+          kubectl -n verity set image deployment/verity-backend backend=${{ env.IMAGE_NAME }}:${{ github.sha }}
+          kubectl -n verity set image deployment/verity-worker worker=${{ env.IMAGE_NAME }}:${{ github.sha }}
+          kubectl -n verity rollout status deployment/verity-backend --timeout=180s
+          kubectl -n verity rollout status deployment/verity-worker --timeout=180s
+
+  deploy-contracts-testnet:
+    if: github.ref == 'refs/heads/staging' || github.event_name == 'workflow_dispatch'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec hardhat run scripts/deploy_vechain.ts --network vechainTestnet
+        env:
+          VECHAIN_TESTNET_RPC: ${{ secrets.VECHAIN_TESTNET_RPC }}
+          DEPLOYER_PRIVATE_KEY_TESTNET: ${{ secrets.DEPLOYER_PRIVATE_KEY_TESTNET }}
+
+  deploy-contracts-mainnet:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production-mainnet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec hardhat run scripts/deploy_vechain.ts --network vechainMainnet
+        env:
+          VECHAIN_MAINNET_RPC: ${{ secrets.VECHAIN_MAINNET_RPC }}
+          DEPLOYER_PRIVATE_KEY_MAINNET: ${{ secrets.DEPLOYER_PRIVATE_KEY_MAINNET }}
