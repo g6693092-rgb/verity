@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: verity-session-cleanup
+  namespace: verity
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: session-cleanup
+              image: ghcr.io/g6693092-rgb/verity-backend:latest
+              command: ["node", "dist/scripts/cleanup-auth-sessions.js"]
+              env:
+                - name: DATA_DIR
+                  value: /var/lib/verity/data
+                - name: AUTH_SESSION_CLEANUP_MS
+                  value: "86400000"
+              volumeMounts:
+                - name: verity-data
+                  mountPath: /var/lib/verity/data
+          volumes:
+            - name: verity-data
+              persistentVolumeClaim:
+                claimName: verity-data
