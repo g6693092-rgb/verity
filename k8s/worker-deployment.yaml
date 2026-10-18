@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/<your-org>/verity-backend:latest
+          image: 0x.../verity-backend:latest
           command: ["node", "dist/queue/worker.js"]
           env:
             - { name: REDIS_URL, value: redis://redis:6379 }
