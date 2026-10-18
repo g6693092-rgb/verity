@@ -1,0 +1,15 @@
+{
+  "claimId": "CLAIM-001",
+  "productId": "SKU-123",
+  "batchId": "LOT-2026-01",
+  "manufacturerDID": "did:vechain:0xabc123",
+  "timestamp": "2026-10-18T10:00:00Z",
+  "countryOfOrigin": "IT",
+  "temperatureSamples": [21, 24, 30, 27],
+  "transportCheck": {
+    "maxTemp": 40,
+    "minTemp": 21,
+    "status": "PASS"
+  },
+  "certificateHash": "0xdeadbeef"
+}
