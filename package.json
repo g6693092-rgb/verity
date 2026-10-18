@@ -12,7 +12,8 @@
     "merkle:poseidon": "tsx src/merkle_poseidon.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
-    "smoke:test": "bash scripts/smoke-test.sh"
+    "smoke:test": "bash scripts/smoke-test.sh",
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -38,6 +39,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.14",
+    "@types/supertest": "^6.0.3",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -45,6 +48,9 @@
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "jest": "^29.7.0",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.2.5"
   }
 }
