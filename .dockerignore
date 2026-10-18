@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+.git
+.gitignore
+.env*
+data
+proofs
+npm-debug.log*
+pnpm-debug.log*

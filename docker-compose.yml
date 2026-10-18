@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: verity-backend
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      VECHAIN_TESTNET_RPC: ${VECHAIN_TESTNET_RPC:-https://rpc-testnet.vechain.energy}
+      VECHAIN_MAINNET_RPC: ${VECHAIN_MAINNET_RPC:-https://rpc-mainnet.vechain.energy}
+    volumes:
+      - ./data:/app/data
+      - ./proofs:/app/proofs
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: verity-web
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: http://backend:3000

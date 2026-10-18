@@ -8,7 +8,11 @@
     "build": "next build",
     "start": "next start",
     "backend": "tsx src/server.ts",
-    "merkle:poseidon": "tsx src/merkle_poseidon.ts"
+    "start:dev": "tsx src/server.ts",
+    "merkle:poseidon": "tsx src/merkle_poseidon.ts",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "smoke:test": "bash scripts/smoke-test.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -40,6 +44,7 @@
     "@types/uuid": "^11.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "5.7.3"
   }
 }
