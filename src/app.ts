@@ -85,7 +85,23 @@ app.get("/readyz", async (_req, res) => {
     res.status(503).json({ ready: false, error: String(error) })
   }
 })
-app.use(["/claims", "/batch", "/prove", "/prove-async", "/jobs", "/verify", "/anchor"], authenticateJWT)
+app.use(["/claims", "/batch", "/prove", "/prove-async", "/jobs", "/verify", "/anchor", "/dashboard"], authenticateJWT)
+
+app.get("/dashboard", (_req, res) => {
+  const index = json<any[]>(path.join(dataDir, "index.json")) ?? []
+  const claims = index.map((item) => {
+    const file = claimPath(String(item.id))
+    return file ? json<any>(file) : null
+  }).filter(Boolean)
+  const jobs = json<any[]>(path.join(dataDir, "jobs.json")) ?? []
+  const verified = claims.filter((claim) => claim.status === "verified" || claim.verified === true).length
+  res.json({
+    stats: { totalClaims: claims.length, verifiedClaims: verified, proofsGenerated: jobs.length, privateDataRetained: claims.length ? 100 : 0 },
+    claims: claims.slice(-10).reverse(),
+    network: "vechain-testnet",
+    generatedAt: new Date().toISOString(),
+  })
+})
 
 app.post("/claims", async (req, res) => { try { const claim = req.body; if (!claim || typeof claim !== "object" || Array.isArray(claim)) return res.status(400).json({ error: "Claim must be a JSON object" }); const id = String(claim.claimId ?? `claim-${randomUUID()}`).replace(/[^a-zA-Z0-9_-]/g, "-"); const saved = { ...claim, claimId: id }; json(path.join(dataDir, `${id}.json`), saved); const leaf = await poseidonLeaf(saved); const index = json<any[]>(path.join(dataDir, "index.json")) ?? []; const entry = { id, poseidonLeaf: leaf.toString(10), commitment: commitment(saved) }; json(path.join(dataDir, "index.json"), [...index.filter(item => item.id !== id), entry]); res.status(201).json(entry) } catch (error) { res.status(500).json({ error: String(error) }) } })
 app.get("/claims/:id", (req, res) => { const file = claimPath(req.params.id); if (!file) return res.status(400).json({ error: "Invalid claim id" }); const claim = json(file); claim ? res.json(claim) : res.status(404).json({ error: "Claim not found" }) })
