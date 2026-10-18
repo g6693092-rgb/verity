@@ -1,5 +1,6 @@
 import "dotenv/config"
 import express from "express"
+import cors from "cors"
 import fs from "node:fs"
 import path from "node:path"
 import { execFile } from "node:child_process"
@@ -24,6 +25,7 @@ promClient.collectDefaultMetrics({ prefix: "verity_" })
 export const app = express()
 app.disable("x-powered-by")
 app.use(helmet())
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN?.split(",").map((value) => value.trim()).filter(Boolean) ?? true, credentials: true }))
 app.use(express.json({ limit: "1mb" }))
 app.use(pinoHttp({ logger }))
 app.use(rateLimit({
