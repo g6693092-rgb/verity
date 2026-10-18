@@ -33,3 +33,5 @@ Keep `JWT_SECRET`, `DEPLOYER_PRIVATE_KEY`, and RPC URLs in the secret manager. N
 4. Configure the protected GitHub `production` environment with `VECHAIN_MAINNET_RPC`, `DEPLOYER_PRIVATE_KEY_MAINNET`, and `VECHAIN_MAINNET_CHAIN_ID`.
 5. Trigger `Deploy RootRegistry mainnet` manually and review the uploaded deployment artifact.
 6. Update `ROOT_REGISTRY` only after independently verifying the deployed address. Never deploy mainnet from a local unreviewed checkout.
+7. For a controlled manual anchor, set `ROOT`, `ROOT_REGISTRY`, `SCHEMA_ID`, and the appropriate deployer key, then run `pnpm anchor:root:testnet` first. The script is idempotent and refuses malformed roots or addresses.
+8. Run the mainnet anchor only from the protected production environment after reviewing the transaction hash and receipt.
