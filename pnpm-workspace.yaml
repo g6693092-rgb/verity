@@ -5,5 +5,5 @@ minimumReleaseAgeExclude:
   - next
 
 allowBuilds:
-  blake-hash: set this to true or false
-  keccak: set this to true or false
+  blake-hash: true
+  keccak: true
