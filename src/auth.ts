@@ -53,31 +53,55 @@ export function registerAuth(app: { get: Function; post: Function }) {
     res.json({ nonce, expiresAt: Date.now() + nonceTtlMs })
   })
 
+  function recoverSignature(message: string, signature: string) {
+    const attempts: Array<{ method: string; recovered?: string; error?: string }> = []
+    const normalized = signature.startsWith("0x") ? signature : `0x${signature}`
+    for (const [method, recover] of [
+      ["verifyMessage", () => ethers.verifyMessage(message, normalized)],
+      ["recoverAddress(hashMessage)", () => ethers.recoverAddress(ethers.hashMessage(message), normalized)],
+    ] as const) {
+      try { attempts.push({ method, recovered: recover() }) } catch (error) { attempts.push({ method, error: error instanceof Error ? error.message : String(error) }) }
+    }
+    return attempts
+  }
+
   app.post("/auth/login-vechain", (req: Request, res: Response) => {
     if (!secret()) return res.status(503).json({ error: "JWT authentication is not configured" })
     const address = String(req.body?.address ?? "").toLowerCase()
     const signature = String(req.body?.signature ?? "")
     const message = String(req.body?.message ?? "")
-    if (!ethers.isAddress(address) || !signature || !message || message.length > 512) return res.status(400).json({ error: "Valid VeChain address, message and signature are required" })
+    if (!ethers.isAddress(address) || !signature || !message || message.length > 1024) return res.status(400).json({ error: "Valid VeChain address, message and signature are required" })
     const nonce = message.replace(/^Verity VeChain login nonce: /, "")
     const pendingFile = path.join(authDir, `pending-${nonce}.json`)
     const pending = read<{ nonce: string; nonceExpiresAt: number }>(pendingFile)
     if (!pending?.nonce || pending.nonceExpiresAt < Date.now() || pending.nonce !== nonce || message !== `Verity VeChain login nonce: ${nonce}`) return res.status(401).json({ error: "Nonce expired or invalid" })
+    const attempts = recoverSignature(message, signature)
+    const recovered = attempts.find((attempt) => attempt.recovered?.toLowerCase() === address)?.recovered
+    if (!recovered) {
+      const details = process.env.NODE_ENV === "production" ? undefined : attempts
+      return res.status(401).json({ error: "Invalid VeChain signature", ...(details ? { attempts: details } : {}) })
+    }
     const file = addressFile(address)
     const record = read<WalletRecord>(file) ?? { address, role: "USER", createdAt: new Date().toISOString() }
-    try {
-      if (ethers.verifyMessage(message, signature).toLowerCase() !== address) return res.status(401).json({ error: "Invalid VeChain signature" })
-    } catch { return res.status(401).json({ error: "Invalid VeChain signature" }) }
     delete record.nonce
     delete record.nonceExpiresAt
     write(file, record)
     const now = Date.now()
     const authToken = token({ sub: address, address, role: record.role, iat: now, exp: now + sessionTtlMs })
     ;(res as Response & { cookie?: Function }).cookie?.("verity_session", authToken, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: sessionTtlMs, path: "/" })
+    try { fs.unlinkSync(pendingFile) } catch { /* nonce cleanup is best effort */ }
     res.json({ token: authToken, user: { address, role: record.role } })
   })
 
-  app.post("/auth/login", (req: Request, res: Response) => {
+  app.post("/auth/debug-recover", (req: Request, res: Response) => {
+    if (process.env.NODE_ENV === "production") return res.status(404).end()
+    const message = String(req.body?.message ?? "")
+    const signature = String(req.body?.signature ?? "")
+    if (!message || !signature || message.length > 1024) return res.status(400).json({ error: "message and signature are required" })
+    res.json({ attempts: recoverSignature(message, signature) })
+  })
+
+  app.post("/auth/login",  (req: Request, res: Response) => {
     if (!secret()) return res.status(503).json({ error: "JWT authentication is not configured" })
     const address = String(req.body?.address ?? "").toLowerCase()
     const signature = String(req.body?.signature ?? "")
