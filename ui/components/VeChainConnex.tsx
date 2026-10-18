@@ -5,8 +5,6 @@ import { useState } from 'react'
 type Props = { onLogged?: (address: string) => void }
 type Connex = { vendor?: { connect?: () => Promise<unknown> }; thor?: { account?: () => { address?: string } } }
 
-declare global { interface Window { connex?: Connex } }
-
 export default function VeChainConnex({ onLogged }: Props) {
   const [status, setStatus] = useState('idle')
   const [address, setAddress] = useState('')
@@ -14,7 +12,7 @@ export default function VeChainConnex({ onLogged }: Props) {
   async function connect() {
     setStatus('connecting')
     try {
-      const connex = window.connex
+      const connex = (window as Window & { connex?: Connex }).connex
       if (!connex?.vendor) { setStatus('no-connex'); return }
       await connex.vendor.connect?.()
       const nextAddress = connex.thor?.account?.().address ?? ''
