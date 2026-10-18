@@ -77,6 +77,27 @@ app.post("/batch", async (_req, res) => {
   } catch (error) { res.status(500).json({ error: String(error) }) }
 })
 
+app.post("/batch/inclusion", async (req, res) => {
+  try {
+    const batchId = String(req.body?.batchId ?? "")
+    const claimId = String(req.body?.claimId ?? "")
+    const batches = json<any[]>(path.join(dataDir, "batches.json")) ?? []
+    const batch = batches.find((item) => item.id === batchId)
+    if (!batch) return res.status(404).json({ error: "Batch not found" })
+    if (!claimId) return res.status(400).json({ error: "claimId required" })
+    const claim = json(path.join(dataDir, `${claimId}.json`))
+    if (!claim) return res.status(404).json({ error: "Claim not found" })
+    const index = json<any[]>(path.join(dataDir, "index.json")) ?? []
+    const claims = index.map((item) => ({ id: item.id, claim: json(path.join(dataDir, `${item.id}.json`)) })).filter((item) => item.claim)
+    const leaves = await Promise.all(claims.map(async ({ claim: item }) => bytes32(await poseidonLeaf(item))))
+    const tree = new MerkleTree(leaves, (value: Buffer) => Buffer.from(value), { sortPairs: true })
+    const position = claims.findIndex((item) => item.id === claimId)
+    if (position < 0) return res.status(404).json({ error: "Claim is not indexed" })
+    const proof = tree.getProof(leaves[position]).map((node) => `0x${node.data.toString("hex")}`)
+    res.json({ batchId, claimId, root: batch.root, leaf: `0x${leaves[position].toString("hex")}`, position, proof })
+  } catch (error) { res.status(500).json({ error: String(error) }) }
+})
+
 app.post("/prove", async (req, res) => {
   try {
     const claimId = String(req.body?.claimId ?? "")
