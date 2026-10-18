@@ -3,11 +3,12 @@
 import { useState } from 'react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
+const EXPLORER_URL = process.env.NEXT_PUBLIC_VECHAIN_EXPLORER_URL ?? 'https://explore-testnet.vechain.org'
 type DashboardData = { stats: { totalClaims: number; verifiedClaims: number; proofsGenerated: number; privateDataRetained: number }; claims: Array<{ id?: string; claimId?: string; product?: string; type?: string; status?: string; createdAt?: string; date?: string; commitment?: string; proof?: string }> ; network: string }
 type NetworkStatus = { network: string; blockHeight: number | null }
 
 type EthereumProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
-type ConnexProvider = { vendor: { sign: (kind: 'cert', options: { purpose: 'identification'; payload: { type: 'text'; content: string } }) => { request: () => Promise<{ annex?: { signer?: string; domain?: string }; signature: string }> } }; thor?: { status: { head: { id: string; number: number } } } }
+type ConnexProvider = { vendor: { connect?: () => Promise<unknown>; sign: (kind: 'cert', options: { purpose: 'identification'; payload: { type: 'text'; content: string } }) => { request: () => Promise<{ annex?: { signer?: string; domain?: string }; signature: string }> } }; thor?: { account: () => { address: string }; status: { head: { id: string; number: number } } } }
 declare global { interface Window { ethereum?: EthereumProvider; connex?: ConnexProvider } }
 import {
   ArrowUpRight,
@@ -60,7 +61,7 @@ export default function Page() {
   }
 
   async function connectWallet() {
-    if (!window.connex && !window.ethereum) { setProofStatus('Open this page inside VeWorld or install a VeChain wallet.'); return }
+    if (!window.connex && !window.ethereum) { setProofStatus('Open this page inside VeWorld: Wallet → Browser → paste this app URL. Chrome mobile cannot inject Connex.'); return }
     setBusy(true)
     try {
       const provider = window.connex
@@ -69,12 +70,13 @@ export default function Page() {
       let message: string
       let loginPath: string
       if (provider) {
+        await provider.vendor.connect?.()
         const nonceResponse = await fetch(`${API_URL}/auth/nonce-vechain`)
         if (!nonceResponse.ok) throw new Error('Could not request VeChain nonce')
         const { nonce } = await nonceResponse.json() as { nonce: string }
         message = `Verity VeChain login nonce: ${nonce}`
         const signed = await provider.vendor.sign('cert', { purpose: 'identification', payload: { type: 'text', content: message } }).request()
-        address = signed.annex?.signer ?? ''
+        address = signed.annex?.signer ?? provider.thor?.account().address ?? ''
         if (!address) throw new Error('VeWorld did not return the signer address.')
         signature = signed.signature
         loginPath = '/auth/login-vechain'
@@ -171,7 +173,7 @@ export default function Page() {
             <div className="flex h-48 items-end gap-1.5 sm:gap-3">{[34,46,39,58,50,65,54,72,61,79,74,90,83,95,88,100,78,86,92,100,94,100,97,100,95,100,91,100,99,100].map((h, i) => <div key={i} className="group flex flex-1 flex-col justify-end gap-2"><div className="relative w-full rounded-t-[3px] bg-[#dff5ed] transition group-hover:bg-[#20b486]" style={{ height: `${h}%` }}><span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-[#142641] px-1.5 py-1 text-[9px] text-white group-hover:block">{Math.round(h * 9.2)}</span></div></div>)}</div>
             <div className="mt-4 flex justify-between text-[10px] font-medium text-[#a0aaba]"><span>19 Sep</span><span>26 Sep</span><span>03 Oct</span><span>10 Oct</span><span>18 Oct</span></div>
           </div>
-          <div className="rounded-xl border border-[#e3e8ef] bg-[#142641] p-6 text-white shadow-[0_4px_20px_rgba(20,38,65,0.1)]"><div className="mb-8 flex items-center justify-between"><div className="flex items-center gap-2 text-[13px] font-semibold"><span className="grid size-7 place-items-center rounded-lg bg-white/10"><Network size={15} /></span> Network status</div><span className="flex items-center gap-1.5 rounded-full bg-[#20b486]/15 px-2.5 py-1 text-[10px] font-semibold text-[#62e5ba]"><span className="size-1.5 rounded-full bg-[#62e5ba]" /> Operational</span></div><div className="mb-7"><p className="mb-1 text-[11px] text-[#8ea0b8]">VeChain Thor · Testnet</p><p className="text-2xl font-semibold tracking-[-0.04em]">{networkStatus?.blockHeight?.toLocaleString() ?? '—'} <span className="text-sm font-normal text-[#8ea0b8]">{networkStatus ? 'block height' : 'connect backend RPC'}</span></p></div><div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-5"><div><p className="text-[10px] text-[#8ea0b8]">Gas price</p><p className="mt-1 text-sm font-medium">1.00 VTHO</p></div><div><p className="text-[10px] text-[#8ea0b8]">Finality</p><p className="mt-1 text-sm font-medium">~10 sec</p></div></div><a href="https://explore-testnet.vechain.org" target="_blank" rel="noreferrer" className="mt-7 flex items-center gap-1 text-[11px] font-semibold text-[#62e5ba]">Open VeChain Explorer <ArrowUpRight size={13} /></a></div>
+          <div className="rounded-xl border border-[#e3e8ef] bg-[#142641] p-6 text-white shadow-[0_4px_20px_rgba(20,38,65,0.1)]"><div className="mb-8 flex items-center justify-between"><div className="flex items-center gap-2 text-[13px] font-semibold"><span className="grid size-7 place-items-center rounded-lg bg-white/10"><Network size={15} /></span> Network status</div><span className="flex items-center gap-1.5 rounded-full bg-[#20b486]/15 px-2.5 py-1 text-[10px] font-semibold text-[#62e5ba]"><span className="size-1.5 rounded-full bg-[#62e5ba]" /> Operational</span></div><div className="mb-7"><p className="mb-1 text-[11px] text-[#8ea0b8]">VeChain Thor · Testnet</p><p className="text-2xl font-semibold tracking-[-0.04em]">{networkStatus?.blockHeight?.toLocaleString() ?? '—'} <span className="text-sm font-normal text-[#8ea0b8]">{networkStatus ? 'block height' : 'connect backend RPC'}</span></p></div><div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-5"><div><p className="text-[10px] text-[#8ea0b8]">Gas price</p><p className="mt-1 text-sm font-medium">1.00 VTHO</p></div><div><p className="text-[10px] text-[#8ea0b8]">Finality</p><p className="mt-1 text-sm font-medium">~10 sec</p></div></div><a href={EXPLORER_URL} target="_blank" rel="noreferrer" className="mt-7 flex items-center gap-1 text-[11px] font-semibold text-[#62e5ba]">Open VeChain Explorer <ArrowUpRight size={13} /></a><p className="mt-2 text-[10px] text-[#8ea0b8]">Explorer link is optional; wallet, RPC and attestations work without it.</p></div>
         </section>
 
         <section className="mt-6 rounded-xl border border-[#e3e8ef] bg-white p-5 shadow-[0_4px_20px_rgba(20,38,65,0.025)] sm:p-6"><div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="text-[15px] font-semibold text-[#142641]">Recent attestations</h2><p className="mt-1 text-xs text-[#8b97a9]">Latest zero-knowledge proofs anchored to VeChain</p></div><button className="flex items-center gap-1.5 text-[11px] font-semibold text-[#188d6b]">View registry <ArrowUpRight size={13} /></button></div><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left"><thead><tr className="border-b border-[#edf0f4] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#9ca6b5]"><th className="pb-3 font-semibold">Asset</th><th className="pb-3 font-semibold">Attestation type</th><th className="pb-3 font-semibold">Status</th><th className="pb-3 font-semibold">Created</th><th className="pb-3 font-semibold">Proof ID</th><th /></tr></thead><tbody>{(dashboard?.claims ?? []).map((a) => <tr key={a.id} className="border-b border-[#f0f2f5] last:border-0"><td className="py-4"><div className="flex items-center gap-3"><span className="grid size-8 place-items-center rounded-lg bg-[#f0f5fb] text-[#557293]"><Box size={15} /></span><div><p className="text-[12px] font-semibold text-[#26364c]">{a.product}</p><p className="mt-0.5 text-[10px] text-[#9aa5b4]">{a.id}</p></div></div></td><td className="py-4 text-[11px] text-[#637188]">{a.type}</td><td className="py-4"><span className={a.status === 'Verified' ? 'inline-flex items-center gap-1.5 rounded-full bg-[#e8f8f2] px-2 py-1 text-[10px] font-semibold text-[#158363]' : 'inline-flex items-center gap-1.5 rounded-full bg-[#fff6e7] px-2 py-1 text-[10px] font-semibold text-[#b77919]'}><span className="size-1.5 rounded-full bg-current" />{a.status}</span></td><td className="py-4 text-[11px] text-[#637188]">{a.date}</td><td className="py-4 font-mono text-[10px] text-[#8995a7]">{a.proof}</td><td className="py-4 text-right"><button onClick={copyAddress} className="rounded-md p-2 text-[#93a0b1] hover:bg-[#f2f5f8] hover:text-[#142641]" aria-label="Copy proof ID"><Copy size={14} /></button></td></tr>)}</tbody></table></div>{copied && <p className="mt-3 text-right text-[11px] font-medium text-[#20a980]">Proof ID copied to clipboard</p>}</section>
