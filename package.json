@@ -14,6 +14,8 @@
     "auth:cleanup": "tsx scripts/cleanup-auth-sessions.ts",
     "deploy:rootregistry:testnet": "hardhat run scripts/deploy_vechain.ts --network vechainTestnet",
     "deploy:rootregistry:mainnet": "hardhat run scripts/deploy_vechain.ts --network vechainMainnet",
+    "anchor:root:testnet": "hardhat run scripts/anchor_root.ts --network vechainTestnet",
+    "anchor:root:mainnet": "hardhat run scripts/anchor_root.ts --network vechainMainnet",
     "merkle:poseidon": "tsx src/merkle_poseidon.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
