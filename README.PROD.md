@@ -15,7 +15,7 @@ The repository publishes `ghcr.io/g6693092-rgb/verity-backend` from the main-bra
 ## Kubernetes
 
 1. Install the External Secrets Operator and configure the `external-secrets-sa` AWS IAM role.
-2. Create namespace and storage/PVC resources for `DATA_DIR`.
+2. Create namespace and apply `k8s/pvc-verity.yaml` for `DATA_DIR`. The PVC must use an RWX-capable storage class when running multiple backend replicas; set `storageClassName` for the target cluster.
 3. Apply `k8s/externalsecret-aws.yaml` and `k8s/pdb-backend.yaml`.
 4. Install the chart with production values:
 
