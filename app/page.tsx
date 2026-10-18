@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import OpenInVeChainButton from '../ui/components/OpenInVeChainButton'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
 const EXPLORER_URL = process.env.NEXT_PUBLIC_VECHAIN_EXPLORER_URL ?? 'https://explore-testnet.vechain.org'
@@ -155,7 +156,7 @@ export default function Page() {
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden items-center gap-2 rounded-full border border-[#dce5e4] bg-[#f4fbf8] px-3 py-1.5 text-[11px] font-semibold text-[#168568] sm:flex"><span className="size-1.5 rounded-full bg-[#20b486]" /> VeChain Testnet</span>
+            <span className="hidden items-center gap-2 rounded-full border border-[#dce5e4] bg-[#f4fbf8] px-3 py-1.5 text-[11px] font-semibold text-[#168568] sm:flex"><span className="size-1.5 rounded-full bg-[#20b486]" /> VeChain Testnet</span><span className="hidden sm:inline-flex"><OpenInVeChainButton /></span>
             <button onClick={connectWallet} disabled={busy} className="hidden items-center gap-2 rounded-lg bg-[#142641] px-3.5 py-2 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#20395c] disabled:opacity-60 sm:flex"><Wallet size={14} /> {connected ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}` : 'Connect wallet'} <ChevronDown size={13} /></button>
             <button className="rounded-lg p-2 text-[#65738a] md:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">{mobileOpen ? <X /> : <Menu />}</button>
           </div>

@@ -18,6 +18,8 @@
     "anchor:root:mainnet": "hardhat run scripts/anchor_root.ts --network vechainMainnet",
     "multisig:encode": "ts-node scripts/encode_multisig_tx.ts",
     "multisig:propose": "ts-node scripts/propose_gnosis_tx.ts",
+    "debug:recover": "node scripts/debug_recover_sig.js",
+    "anchor:example": "ts-node scripts/anchor_example_server.ts",
     "merkle:poseidon": "tsx src/merkle_poseidon.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
