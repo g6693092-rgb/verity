@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: verity-ingress
+  namespace: verity
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: verity.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: verity-backend
+                port:
+                  number: 3000
