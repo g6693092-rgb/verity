@@ -32,13 +32,24 @@ async function main() {
   const data = options.data || null
   if (data && !/^0x[0-9a-fA-F]*$/.test(data)) throw new Error("--data must be hex calldata")
 
+  const contractTransactionHash = options.contractTransactionHash ?? process.env.SAFE_TX_HASH
+  const sender = options.sender ?? process.env.SAFE_SENDER
+  const signature = options.signature ?? process.env.SAFE_SIGNATURE
+  const allowUnsigned = options.allowUnsigned === "true" || options.allowUnsigned === "1"
+  if (!allowUnsigned && (!contractTransactionHash || !sender || !signature)) {
+    throw new Error("Signed proposals require --contractTransactionHash, --sender, and --signature; use --allowUnsigned only for staging")
+  }
+  if (contractTransactionHash && !/^0x[0-9a-fA-F]{64}$/.test(contractTransactionHash)) throw new Error("contractTransactionHash must be a 32-byte hex hash")
+  if (sender) address(sender, "sender")
+  if (signature && !/^0x[0-9a-fA-F]+$/.test(signature)) throw new Error("signature must be hex")
+
   const payload = {
     to, value: options.value ?? "0", data, operation, safeTxGas: options.safeTxGas ?? "0",
     baseGas: options.baseGas ?? "0", gasPrice: options.gasPrice ?? "0",
     gasToken: options.gasToken ?? "0x0000000000000000000000000000000000000000",
     refundReceiver: options.refundReceiver ?? "0x0000000000000000000000000000000000000000",
-    contractTransactionHash: options.contractTransactionHash ?? null,
-    sender: options.sender ?? null, signature: options.signature ?? null,
+    contractTransactionHash: contractTransactionHash ?? null,
+    sender: sender ?? null, signature: signature ?? null,
     origin: options.origin ?? "verity-multisig-proposal",
   }
   const url = `${service}/api/v1/safes/${safe}/multisig-transactions/`
