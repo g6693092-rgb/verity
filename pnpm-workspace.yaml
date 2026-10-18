@@ -6,4 +6,5 @@ minimumReleaseAgeExclude:
 
 allowBuilds:
   blake-hash: true
+  esbuild: true
   keccak: true
