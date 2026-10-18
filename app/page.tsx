@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ''
+type DashboardData = { stats: { totalClaims: number; verifiedClaims: number; proofsGenerated: number; privateDataRetained: number }; claims: Array<{ claimId?: string; product?: string; status?: string; createdAt?: string }> ; network: string }
+
 type EthereumProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
 declare global { interface Window { ethereum?: EthereumProvider } }
 import {
@@ -44,6 +47,13 @@ export default function Page() {
   const [assetReference, setAssetReference] = useState('')
   const [proofStatus, setProofStatus] = useState('')
   const [busy, setBusy] = useState(false)
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+
+  async function loadDashboard(token: string) {
+    const response = await fetch(`${API_URL}/dashboard`, { headers: { authorization: `Bearer ${token}` }, credentials: 'include' })
+    if (!response.ok) throw new Error('Could not load dashboard data')
+    setDashboard(await response.json() as DashboardData)
+  }
 
   async function connectWallet() {
     if (!window.ethereum) { setProofStatus('Install MetaMask to connect a wallet.'); return }
@@ -61,9 +71,11 @@ export default function Page() {
       if (!loginResponse.ok) throw new Error('Wallet signature was rejected')
       const login = await loginResponse.json() as { token?: string }
       setWalletAddress(address)
-      setAuthToken(login.token ?? '')
+      const token = login.token ?? ''
+      setAuthToken(token)
       setConnected(true)
-      setProofStatus('Wallet authenticated.')
+      await loadDashboard(token)
+      setProofStatus('Wallet authenticated and dashboard loaded.')
     } catch (error) { setProofStatus(error instanceof Error ? error.message : 'Wallet connection failed.') }
     finally { setBusy(false) }
   }
@@ -118,9 +130,9 @@ export default function Page() {
         </div>
 
         <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Stat icon={<ShieldCheck />} label="Verified assets" value="1,284" delta="+12.4%" tone="green" />
-          <Stat icon={<FileCheck2 />} label="Proofs generated" value="8,491" delta="+8.7%" tone="blue" />
-          <Stat icon={<LockKeyhole />} label="Private data retained" value="96.8%" delta="vs. public chain" tone="purple" />
+          <Stat icon={<ShieldCheck />} label="Verified assets" value={dashboard ? String(dashboard.stats.verifiedClaims) : '—'} delta={dashboard ? 'live' : 'connect wallet'} tone="green" />
+          <Stat icon={<FileCheck2 />} label="Proofs generated" value={dashboard ? String(dashboard.stats.proofsGenerated) : '—'} delta={dashboard ? 'live' : 'connect wallet'} tone="blue" />
+          <Stat icon={<LockKeyhole />} label="Private data retained" value={dashboard ? `${dashboard.stats.privateDataRetained}%` : '—'} delta={dashboard ? 'filesystem backend' : 'connect wallet'} tone="purple" />
           <Stat icon={<Zap />} label="Avg. verification" value="1.8s" delta="−24.2%" tone="orange" />
         </section>
 
