@@ -75,10 +75,19 @@ export default function Page() {
         if (!nonceResponse.ok) throw new Error('Could not request VeChain nonce')
         const { nonce } = await nonceResponse.json() as { nonce: string }
         message = `Verity VeChain login nonce: ${nonce}`
-        const signed = await provider.vendor.sign('cert', { purpose: 'identification', payload: { type: 'text', content: message } }).request()
-        address = signed.annex?.signer ?? provider.thor?.account().address ?? ''
-        if (!address) throw new Error('VeWorld did not return the signer address.')
-        signature = signed.signature
+        const account = provider.thor?.account().address ?? ''
+        if (!account) throw new Error('VeWorld did not expose the active account.')
+        address = account
+        let rawSignature: unknown
+        try {
+          rawSignature = await (provider.vendor.sign as unknown as (kind: string, args: unknown[]) => unknown)('message', [address, message])
+        } catch {
+          const signed = await provider.vendor.sign('cert', { purpose: 'identification', payload: { type: 'text', content: message } }).request()
+          address = signed.annex?.signer ?? address
+          rawSignature = signed.signature
+        }
+        signature = typeof rawSignature === 'string' ? rawSignature : String((rawSignature as { signature?: string })?.signature ?? '')
+        if (!signature) throw new Error('VeWorld did not return a signature.')
         loginPath = '/auth/login-vechain'
       } else {
         const accounts = await window.ethereum!.request({ method: 'eth_requestAccounts' }) as string[]
