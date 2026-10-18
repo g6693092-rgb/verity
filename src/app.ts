@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto"
 import { promisify } from "node:util"
 import keccak256 from "keccak256"
 import { MerkleTree } from "merkletreejs"
-import circomlibjs from "circomlibjs"
+import * as circomlibjs from "circomlibjs"
 import { ethers } from "ethers"
 import snarkjs from "snarkjs"
 
