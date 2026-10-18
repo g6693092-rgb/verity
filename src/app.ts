@@ -10,6 +10,7 @@ import { MerkleTree } from "merkletreejs"
 import * as circomlibjs from "circomlibjs"
 import { ethers } from "ethers"
 import snarkjs from "snarkjs"
+import { getProofQueue } from "./queue/queue"
 
 export const app = express()
 app.use(express.json({ limit: "1mb" }))
@@ -83,6 +84,32 @@ app.post("/prove", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: String(error) })
   }
+})
+
+app.post("/prove-async", async (req, res) => {
+  try {
+    const claimId = String(req.body?.claimId ?? "")
+    if (!claimId) return res.status(400).json({ error: "claimId required" })
+    const file = claimPath(claimId)
+    if (!file) return res.status(400).json({ error: "Invalid claim id" })
+    if (!fs.existsSync(file)) return res.status(404).json({ error: "Claim not found" })
+    const jobId = randomUUID()
+    const jobsDir = path.join(dataDir, "jobs")
+    fs.mkdirSync(jobsDir, { recursive: true })
+    json(path.join(jobsDir, `${jobId}.json`), { jobId, claimId, status: "queued", queuedAt: new Date().toISOString() })
+    await getProofQueue().add({ jobId, claimId })
+    res.status(202).json({ jobId, status: "queued" })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.get("/jobs/:id", (req, res) => {
+  const id = safeId(req.params.id)
+  if (!id) return res.status(400).json({ error: "Invalid job id" })
+  const file = path.join(dataDir, "jobs", `${id}.json`)
+  const job = json(file)
+  return job ? res.json(job) : res.status(404).json({ error: "Job not found" })
 })
 
 app.post("/verify", async (req, res) => { try { const { proof, publicSignals, vk, root, rpc, contract } = req.body ?? {}; let valid: boolean | null = null; if (proof && publicSignals && vk) valid = await (snarkjs as any).plonk.verify(vk, publicSignals, proof); const normalized = root ? normalizeRoot(root) : null; let anchored: boolean | null = null; if (normalized && (rpc ?? process.env.VECHAIN_TESTNET_RPC) && (contract ?? process.env.ROOT_REGISTRY)) { const provider = new ethers.JsonRpcProvider(rpc ?? process.env.VECHAIN_TESTNET_RPC); anchored = await new ethers.Contract(contract ?? process.env.ROOT_REGISTRY, ["function isAnchored(bytes32) view returns (bool)"], provider).isAnchored(normalized) } res.json({ valid, anchored, normalized }) } catch (error) { res.status(500).json({ error: String(error) }) } })
