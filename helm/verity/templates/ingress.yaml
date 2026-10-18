@@ -1,0 +1,18 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "verity.fullname" . }}
+  annotations:
+{{ toYaml .Values.ingress.annotations | indent 4 }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: {{ include "verity.fullname" . }}-service, port: { number: {{ .Values.service.port }} } } }
+  tls:
+{{ toYaml .Values.ingress.tls | indent 4 }}
+{{- end }}

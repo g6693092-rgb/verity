@@ -1,0 +1,9 @@
+resources:
+  - ../../base
+  - secret-prod.yaml
+patches:
+  - path: deployment-replicas.yaml
+  - path: backend-image.yaml
+  - path: worker-image.yaml
+commonLabels:
+  environment: prod

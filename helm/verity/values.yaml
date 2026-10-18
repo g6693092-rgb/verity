@@ -1,0 +1,34 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/your-org/verity-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+worker:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/your-org/verity-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 3000
+resources:
+  backend:
+    requests: { cpu: 250m, memory: 256Mi }
+    limits: { cpu: 1000m, memory: 1Gi }
+  worker:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits: { cpu: 800m, memory: 1Gi }
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60
+redis:
+  enabled: true
+  image: redis:7-alpine
+ingress:
+  enabled: false
+  host: verity.example.com
+  annotations: {}
+  tls: []
