@@ -41,6 +41,17 @@ app.get("/metrics", async (_req, res) => {
   res.set("Content-Type", promClient.register.contentType)
   res.end(await promClient.register.metrics())
 })
+
+app.get("/network/status", async (_req, res) => {
+  const rpc = process.env.VECHAIN_TESTNET_RPC
+  if (!rpc) return res.status(503).json({ error: "VECHAIN_TESTNET_RPC is not configured" })
+  try {
+    const response = await fetch(`${rpc.replace(/\/$/, "")}/blocks/best`)
+    if (!response.ok) return res.status(502).json({ error: "VeChain Thor RPC unavailable" })
+    const block = await response.json() as { number?: number; id?: string; timestamp?: number }
+    res.json({ network: "vechain-testnet", blockHeight: block.number ?? null, blockId: block.id ?? null, timestamp: block.timestamp ?? null })
+  } catch { res.status(502).json({ error: "VeChain Thor RPC unavailable" }) }
+})
 const dataDir = path.resolve(process.env.DATA_DIR ?? "data")
 const sampleDir = path.resolve("sample")
 const proofDir = path.resolve("proofs")
