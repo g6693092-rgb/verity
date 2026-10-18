@@ -16,6 +16,7 @@ import rateLimit from "express-rate-limit"
 import pino from "pino"
 import pinoHttp from "pino-http"
 import promClient from "prom-client"
+import { registerAuth } from "./auth"
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 promClient.collectDefaultMetrics({ prefix: "verity_" })
@@ -31,6 +32,8 @@ app.use(rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
 }))
+
+registerAuth(app)
 
 app.get("/metrics", async (_req, res) => {
   res.set("Content-Type", promClient.register.contentType)
