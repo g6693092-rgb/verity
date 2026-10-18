@@ -12,6 +12,8 @@
     "start:worker": "tsx src/queue/worker.ts",
     "typecheck": "tsc --noEmit",
     "auth:cleanup": "tsx scripts/cleanup-auth-sessions.ts",
+    "deploy:rootregistry:testnet": "hardhat run scripts/deploy_vechain.ts --network vechainTestnet",
+    "deploy:rootregistry:mainnet": "hardhat run scripts/deploy_vechain.ts --network vechainMainnet",
     "merkle:poseidon": "tsx src/merkle_poseidon.ts",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down",
