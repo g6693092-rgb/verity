@@ -20,10 +20,17 @@ node circuits/build/cold_chain_js/generate_witness.js \
   sample/input-cold-chain.json \
   proofs/witness.wtns
 
-if [[ ! -f pot12_final.ptau ]]; then
-  npx snarkjs powersoftau new bn128 12 pot12_0000.ptau -v
-  npx snarkjs powersoftau contribute pot12_0000.ptau pot12_0001.ptau --name="first contribution" -v
-  npx snarkjs powersoftau prepare phase2 pot12_0001.ptau pot12_final.ptau -v
+PTAU_FILE="${PTAU_FILE:-${PTAU:-$ROOT_DIR/pot12_final.ptau}}"
+PTAU_URL="${PTAU_URL:-}"
+if [[ ! -f "$PTAU_FILE" ]]; then
+  if [[ -n "$PTAU_URL" ]]; then
+    command -v curl >/dev/null 2>&1 || { echo "curl is required to download PTAU" >&2; exit 1; }
+    echo "Downloading PTAU from configured URL"
+    curl --fail --location --retry 3 --output "$PTAU_FILE" "$PTAU_URL"
+  else
+    echo "No trusted PTAU found. Set PTAU_FILE or PTAU_URL; refusing to generate ceremony parameters." >&2
+    exit 1
+  fi
 fi
 
 npx snarkjs plonk setup circuits/build/cold_chain.r1cs pot12_final.ptau proofs/circuit_final.zkey
