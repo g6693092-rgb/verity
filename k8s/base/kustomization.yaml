@@ -1,0 +1,7 @@
+resources:
+  - ../namespace.yaml
+  - ../redis-deployment.yaml
+  - ../backend-deployment.yaml
+  - ../worker-deployment.yaml
+  - ../backend-hpa.yaml
+  - ../ingress.yaml

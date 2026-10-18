@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "verity.fullname" . }}-worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels: { app: {{ include "verity.fullname" . }}-worker }
+  template:
+    metadata:
+      labels: { app: {{ include "verity.fullname" . }}-worker }
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          command: ["node", "dist/queue/worker.js"]
+          envFrom: [{ secretRef: { name: verity-secrets } }]
+          env: [{ name: REDIS_URL, value: redis://redis:6379 }]
+          resources:
+{{ toYaml .Values.resources.worker | indent 12 }}
