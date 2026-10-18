@@ -23,6 +23,8 @@ jobs:
           version: 12.3.4
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm typecheck
       - name: Run tests
         run: pnpm test
 
