@@ -15,7 +15,9 @@ for (const dir of [dataDir, sampleDir, proofDir, jobsDir]) fs.mkdirSync(dir, { r
 const readJson = (file: string) => JSON.parse(fs.readFileSync(file, "utf8"))
 const writeJob = (jobId: string, value: unknown) => fs.writeFileSync(path.join(jobsDir, `${jobId}.json`), JSON.stringify(value, null, 2))
 
-getProofQueue().process(1, async (job) => {
+const concurrency = Math.max(1, Number(process.env.PROOF_WORKER_CONCURRENCY ?? 1))
+
+getProofQueue().process(concurrency, async (job) => {
   const { jobId, claimId } = job.data
   writeJob(jobId, { jobId, claimId, status: "running", startedAt: new Date().toISOString() })
 
