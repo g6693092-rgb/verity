@@ -1,0 +1,43 @@
+replicaCount: 3
+
+image:
+  repository: ghcr.io/g6693092-rgb/verity-backend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+worker:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/g6693092-rgb/verity-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+resources:
+  backend:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  worker:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1500m
+      memory: 1536Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 55
+
+redis:
+  enabled: false
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 10Gi

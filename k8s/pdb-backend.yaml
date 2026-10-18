@@ -1,7 +1,7 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: verity-backend
+  name: verity-backend-pdb
   namespace: verity
 spec:
   minAvailable: 1
