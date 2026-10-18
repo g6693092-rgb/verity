@@ -8,4 +8,4 @@ allowBuilds:
   blake-hash: true
   esbuild: true
   keccak: true
-  msgpackr-extract: set this to true or false
+  msgpackr-extract: true
