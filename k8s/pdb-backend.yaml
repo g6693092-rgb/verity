@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: verity-backend
+  namespace: verity
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: verity-backend
