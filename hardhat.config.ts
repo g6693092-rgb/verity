@@ -2,8 +2,13 @@ import type { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-ethers";
 import "dotenv/config";
 
-const testnetKey = process.env.DEPLOYER_PRIVATE_KEY_TESTNET ?? process.env.DEPLOYER_PRIVATE_KEY;
-const mainnetKey = process.env.DEPLOYER_PRIVATE_KEY_MAINNET ?? process.env.DEPLOYER_PRIVATE_KEY;
+const normalizePrivateKey = (value: string | undefined) => {
+  const key = value?.trim().replace(/^0x/, "")
+  return key && /^[0-9a-fA-F]{64}$/.test(key) ? `0x${key}` : undefined
+}
+
+const testnetKey = normalizePrivateKey(process.env.DEPLOYER_PRIVATE_KEY_TESTNET ?? process.env.DEPLOYER_PRIVATE_KEY)
+const mainnetKey = normalizePrivateKey(process.env.DEPLOYER_PRIVATE_KEY_MAINNET ?? process.env.DEPLOYER_PRIVATE_KEY)
 
 const config: HardhatUserConfig = {
   solidity: { version: "0.8.17", settings: { optimizer: { enabled: true, runs: 200 } } },
