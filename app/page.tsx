@@ -35,6 +35,7 @@ export default function Page() {
   const [activeTab, setActiveTab] = useState('Overview')
   const [connected, setConnected] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [attestationOpen, setAttestationOpen] = useState(false)
 
   function copyAddress() {
     navigator.clipboard?.writeText('0x4a19…c82f')
@@ -67,7 +68,7 @@ export default function Page() {
       <div id="top" className="mx-auto max-w-[1440px] px-5 py-8 lg:px-10 lg:py-11">
         <div className="mb-9 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div><div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#20a980]"><Sparkles size={13} /> Privacy-preserving infrastructure</div><h1 className="text-3xl font-semibold tracking-[-0.045em] text-[#142641] sm:text-[40px]">RWA Attestation Protocol</h1><p className="mt-2 max-w-xl text-[14px] leading-6 text-[#718097]">Prove what matters. Keep what&apos;s private. A verification layer for the physical world, secured on VeChain.</p></div>
-          <button className="flex w-fit items-center gap-2 rounded-lg bg-[#20b486] px-4 py-2.5 text-[12px] font-semibold text-white shadow-[0_5px_16px_rgba(32,180,134,0.2)] transition hover:bg-[#159b70]"><Plus size={15} /> Create attestation</button>
+          <button onClick={() => setAttestationOpen(true)} className="flex w-fit items-center gap-2 rounded-lg bg-[#20b486] px-4 py-2.5 text-[12px] font-semibold text-white shadow-[0_5px_16px_rgba(32,180,134,0.2)] transition hover:bg-[#159b70]"><Plus size={15} /> Create attestation</button>
         </div>
 
         <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -91,6 +92,14 @@ export default function Page() {
         <section className="mt-6 grid gap-6 lg:grid-cols-3"><InfoCard icon={<ScanLine />} title="Privacy by default" text="Selective disclosure lets you prove compliance without exposing commercial data." /><InfoCard icon={<Truck />} title="Physical to digital" text="Turn supply-chain events into verifiable credentials for every asset." /><InfoCard icon={<Globe2 />} title="Built for scale" text="Low-cost attestations on VeChain, ready for enterprise volume." /></section>
         <footer className="mt-12 flex flex-col justify-between gap-3 border-t border-[#e3e8ef] py-6 text-[11px] text-[#9aa5b4] sm:flex-row"><span>Veridion Protocol · v0.1.0 testnet</span><span className="flex gap-5"><a href="#docs" className="hover:text-[#142641]">Protocol docs</a><a href="#status" className="hover:text-[#142641]">Status</a><a href="#support" className="hover:text-[#142641]">Support</a></span></footer>
       </div>
+      {attestationOpen && <div className="fixed inset-0 z-50 grid place-items-center bg-[#142641]/40 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="attestation-title">
+        <div className="w-full max-w-lg rounded-2xl border border-[#e3e8ef] bg-white p-6 shadow-2xl">
+          <div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#20a980]">VeChain testnet</p><h2 id="attestation-title" className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#142641]">Create a private attestation</h2><p className="mt-1 text-xs leading-5 text-[#7c899b]">Generate a selective-disclosure proof without publishing the underlying supply-chain data.</p></div><button onClick={() => setAttestationOpen(false)} aria-label="Close dialog" className="rounded-md p-1 text-[#8390a2] hover:bg-[#f1f4f7]"><X /></button></div>
+          <div className="mt-6 grid gap-3"><label className="grid gap-1.5 text-[11px] font-semibold text-[#526177]">Asset reference<input className="rounded-lg border border-[#dfe6ed] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#20b486]" placeholder="e.g. LOT-1842" /></label><label className="grid gap-1.5 text-[11px] font-semibold text-[#526177]">Proof claims<select className="rounded-lg border border-[#dfe6ed] bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-[#20b486]"><option>Authenticity + cold-chain compliance</option><option>Origin + carbon footprint</option><option>Regulatory compliance</option></select></label></div>
+          <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#f0faf6] px-3 py-2.5 text-[11px] text-[#347b68]"><ShieldCheck size={15} /> Private witness data stays off-chain; only the proof commitment is anchored.</div>
+          <div className="mt-6 flex justify-end gap-2"><button onClick={() => setAttestationOpen(false)} className="rounded-lg px-3.5 py-2 text-[12px] font-semibold text-[#66758a] hover:bg-[#f1f4f7]">Cancel</button><button onClick={() => setAttestationOpen(false)} className="rounded-lg bg-[#142641] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#20395c]">Generate ZK proof</button></div>
+        </div>
+      </div>}
     </main>
   )
 }
