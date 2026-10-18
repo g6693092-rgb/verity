@@ -1,0 +1,29 @@
+name: CI - build circuits and publish artifacts
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-circuits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Compile circuits and generate proof
+        run: ./scripts/run-cold-chain-proof.sh
+      - name: Upload proofs artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofs
+          path: proofs/
+          if-no-files-found: ignore
