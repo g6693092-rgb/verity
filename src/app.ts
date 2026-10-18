@@ -16,7 +16,7 @@ import rateLimit from "express-rate-limit"
 import pino from "pino"
 import pinoHttp from "pino-http"
 import promClient from "prom-client"
-import { registerAuth } from "./auth"
+import { authenticateJWT, registerAuth } from "./auth"
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
 promClient.collectDefaultMetrics({ prefix: "verity_" })
@@ -85,6 +85,8 @@ app.get("/readyz", async (_req, res) => {
     res.status(503).json({ ready: false, error: String(error) })
   }
 })
+app.use(["/claims", "/batch", "/prove", "/prove-async", "/jobs", "/verify", "/anchor"], authenticateJWT)
+
 app.post("/claims", async (req, res) => { try { const claim = req.body; if (!claim || typeof claim !== "object" || Array.isArray(claim)) return res.status(400).json({ error: "Claim must be a JSON object" }); const id = String(claim.claimId ?? `claim-${randomUUID()}`).replace(/[^a-zA-Z0-9_-]/g, "-"); const saved = { ...claim, claimId: id }; json(path.join(dataDir, `${id}.json`), saved); const leaf = await poseidonLeaf(saved); const index = json<any[]>(path.join(dataDir, "index.json")) ?? []; const entry = { id, poseidonLeaf: leaf.toString(10), commitment: commitment(saved) }; json(path.join(dataDir, "index.json"), [...index.filter(item => item.id !== id), entry]); res.status(201).json(entry) } catch (error) { res.status(500).json({ error: String(error) }) } })
 app.get("/claims/:id", (req, res) => { const file = claimPath(req.params.id); if (!file) return res.status(400).json({ error: "Invalid claim id" }); const claim = json(file); claim ? res.json(claim) : res.status(404).json({ error: "Claim not found" }) })
 app.post("/batch", async (_req, res) => { try { const index = json<any[]>(path.join(dataDir, "index.json")) ?? []; const claims = index.map(item => { const file = claimPath(item.id); return { claim: file ? json(file) : null } }).filter(item => item.claim); if (!claims.length) return res.status(400).json({ error: "No claims to batch" }); const batch = { id: `batch-${randomUUID()}`, root: await rootForClaims(claims), timestamp: new Date().toISOString(), count: claims.length }; const batches = json<any[]>(path.join(dataDir, "batches.json")) ?? []; json(path.join(dataDir, "batches.json"), [...batches, batch]); res.status(201).json({ batch }) } catch (error) { res.status(500).json({ error: String(error) }) } })
