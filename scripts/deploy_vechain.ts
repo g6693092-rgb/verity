@@ -5,8 +5,18 @@ const { ethers } = hardhat as typeof hardhat & { ethers: any }
 
 async function main() {
   const [deployer] = await ethers.getSigners()
+  if (!deployer) throw new Error("No deployer signer configured")
+
+  const network = await ethers.provider.getNetwork()
+  const expectedChainId = process.env.EXPECTED_CHAIN_ID
+  if (expectedChainId && network.chainId.toString() !== expectedChainId) {
+    throw new Error(`Wrong network: expected chain ${expectedChainId}, got ${network.chainId}`)
+  }
+
   const balance = await deployer.getBalance()
+  if (balance.isZero()) throw new Error(`Deployer ${deployer.address} has zero balance`)
   console.log(`Deploying RootRegistry from ${deployer.address}`)
+  console.log(`Network chain ID: ${network.chainId.toString()}`)
   console.log(`Balance: ${balance.toString()}`)
 
   const factory = await ethers.getContractFactory("RootRegistry")
