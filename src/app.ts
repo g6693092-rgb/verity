@@ -11,9 +11,31 @@ import * as circomlibjs from "circomlibjs"
 import { ethers } from "ethers"
 import snarkjs from "snarkjs"
 import { getProofQueue } from "./queue/queue"
+import helmet from "helmet"
+import rateLimit from "express-rate-limit"
+import pino from "pino"
+import pinoHttp from "pino-http"
+import promClient from "prom-client"
+
+const logger = pino({ level: process.env.LOG_LEVEL ?? "info" })
+promClient.collectDefaultMetrics({ prefix: "verity_" })
 
 export const app = express()
+app.disable("x-powered-by")
+app.use(helmet())
 app.use(express.json({ limit: "1mb" }))
+app.use(pinoHttp({ logger }))
+app.use(rateLimit({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
+  limit: Number(process.env.RATE_LIMIT_MAX ?? 100),
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+}))
+
+app.get("/metrics", async (_req, res) => {
+  res.set("Content-Type", promClient.register.contentType)
+  res.end(await promClient.register.metrics())
+})
 const dataDir = path.resolve(process.env.DATA_DIR ?? "data")
 const sampleDir = path.resolve("sample")
 const proofDir = path.resolve("proofs")
