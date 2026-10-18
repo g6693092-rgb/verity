@@ -27,5 +27,6 @@ if [[ ! -f pot12_final.ptau ]]; then
 fi
 
 npx snarkjs plonk setup circuits/build/cold_chain.r1cs pot12_final.ptau proofs/circuit_final.zkey
+npx snarkjs zkey export verificationkey proofs/circuit_final.zkey proofs/verification_key.json
 npx snarkjs plonk prove proofs/circuit_final.zkey proofs/witness.wtns proofs/proof.json proofs/public.json
-npx snarkjs plonk verify proofs/circuit_final.zkey proofs/public.json proofs/proof.json
+npx snarkjs plonk verify proofs/verification_key.json proofs/public.json proofs/proof.json
