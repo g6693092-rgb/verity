@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-dev:/data
+  backend:
+    build: .
+    command: pnpm start:dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATA_DIR: /var/lib/verity/data
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - .:/app
+      - verity-data-dev:/var/lib/verity/data
+    depends_on:
+      - redis
+volumes:
+  redis-dev:
+  verity-data-dev:

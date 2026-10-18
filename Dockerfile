@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile=false
 
 COPY . .
-RUN pnpm exec tsc --noEmit
+RUN pnpm typecheck
 
 EXPOSE 3000
-CMD ["pnpm", "backend"]
+CMD ["pnpm", "start"]
