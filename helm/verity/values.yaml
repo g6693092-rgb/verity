@@ -1,12 +1,12 @@
 replicaCount: 2
 image:
-  repository: 0x.../verity-backend
+  repository: ghcr.io/g6693092-rgb/verity-backend
   tag: latest
   pullPolicy: IfNotPresent
 worker:
   replicaCount: 1
   image:
-    repository: 0x.../verity-backend
+    repository: ghcr.io/g6693092-rgb/verity-backend
     tag: latest
     pullPolicy: IfNotPresent
 service:

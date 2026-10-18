@@ -16,7 +16,7 @@ if [[ ${#files[@]} -eq 0 ]]; then
 fi
 
 for file in "${files[@]}"; do
-  perl -0pi -e "s#ghcr\\.io/(?:<your-org>|your-org)#$registry#g" "$file"
+  perl -0pi -e "s#(?:ghcr\\.io/(?:<your-org>|your-org)|0x\\.\\.\\.)/verity-backend#$registry/verity-backend#g" "$file"
 done
 
 echo "Updated ${#files[@]} manifest(s) to use $registry."
