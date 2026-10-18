@@ -24,3 +24,12 @@ helm upgrade --install verity helm/verity --namespace verity --create-namespace 
 ```
 
 Keep `JWT_SECRET`, `DEPLOYER_PRIVATE_KEY`, and RPC URLs in the secret manager. Never put plaintext values in manifests or CI files.
+
+## RootRegistry release runbook
+
+1. Deploy to VeChain testnet first with `VECHAIN_TESTNET_RPC` and `DEPLOYER_PRIVATE_KEY_TESTNET`.
+2. Confirm `deploy/rootregistry.json` has the expected chain ID and verify the contract bytecode/address.
+3. Run the backend smoke flow: authenticated claim, batch, async proof, verification, then anchor.
+4. Configure the protected GitHub `production` environment with `VECHAIN_MAINNET_RPC`, `DEPLOYER_PRIVATE_KEY_MAINNET`, and `VECHAIN_MAINNET_CHAIN_ID`.
+5. Trigger `Deploy RootRegistry mainnet` manually and review the uploaded deployment artifact.
+6. Update `ROOT_REGISTRY` only after independently verifying the deployed address. Never deploy mainnet from a local unreviewed checkout.
