@@ -10,11 +10,11 @@ async function main() {
   const signed = fs.readFileSync(signedPath, "utf8").trim()
   const rpc = process.env.VECHAIN_TESTNET_RPC ?? process.env.VECHAIN_MAINNET_RPC
   if (!rpc) throw new Error("Set VECHAIN_TESTNET_RPC or VECHAIN_MAINNET_RPC")
-  const provider = new ethers.providers.JsonRpcProvider(rpc)
-  const tx = await provider.sendTransaction(signed)
+  const provider = new ethers.JsonRpcProvider(rpc)
+  const tx = await provider.broadcastTransaction(signed)
   console.log("Tx sent:", tx.hash)
   const receipt = await tx.wait()
-  console.log("Tx mined:", receipt.transactionHash)
+  console.log("Tx mined:", receipt?.hash ?? tx.hash)
 }
 
 main().catch((error) => {
