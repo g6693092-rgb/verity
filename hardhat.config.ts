@@ -8,13 +8,15 @@ const mainnetKey = process.env.DEPLOYER_PRIVATE_KEY_MAINNET ?? process.env.DEPLO
 const config: HardhatUserConfig = {
   solidity: { version: "0.8.17", settings: { optimizer: { enabled: true, runs: 200 } } },
   networks: {
-    hardhat: {},
+    hardhat: { type: "edr-simulated" },
     vechainTestnet: {
+      type: "http",
       url: process.env.VECHAIN_TESTNET_RPC ?? "https://rpc-testnet.vechain.energy",
       chainId: 100010,
       accounts: testnetKey ? [testnetKey] : [],
     },
     vechainMainnet: {
+      type: "http",
       url: process.env.VECHAIN_MAINNET_RPC ?? "https://rpc-mainnet.vechain.energy",
       chainId: 100009,
       accounts: mainnetKey ? [mainnetKey] : [],
