@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+
+type EthereumProvider = { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> }
+declare global { interface Window { ethereum?: EthereumProvider } }
 import {
   ArrowUpRight,
   BadgeCheck,
@@ -34,13 +37,56 @@ export default function Page() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
   const [connected, setConnected] = useState(false)
+  const [walletAddress, setWalletAddress] = useState('')
+  const [authToken, setAuthToken] = useState('')
   const [copied, setCopied] = useState(false)
   const [attestationOpen, setAttestationOpen] = useState(false)
+  const [assetReference, setAssetReference] = useState('')
+  const [proofStatus, setProofStatus] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function connectWallet() {
+    if (!window.ethereum) { setProofStatus('Install MetaMask to connect a wallet.'); return }
+    setBusy(true)
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[]
+      const address = accounts[0]
+      if (!address) throw new Error('No wallet selected')
+      const api = process.env.NEXT_PUBLIC_API_URL ?? ''
+      const nonceResponse = await fetch(`${api}/auth/nonce/${address}`)
+      if (!nonceResponse.ok) throw new Error('Could not request wallet nonce')
+      const { nonce } = await nonceResponse.json() as { nonce: string }
+      const signature = await window.ethereum.request({ method: 'personal_sign', params: [nonce, address] }) as string
+      const loginResponse = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'include', body: JSON.stringify({ address, signature }) })
+      if (!loginResponse.ok) throw new Error('Wallet signature was rejected')
+      const login = await loginResponse.json() as { token?: string }
+      setWalletAddress(address)
+      setAuthToken(login.token ?? '')
+      setConnected(true)
+      setProofStatus('Wallet authenticated.')
+    } catch (error) { setProofStatus(error instanceof Error ? error.message : 'Wallet connection failed.') }
+    finally { setBusy(false) }
+  }
 
   function copyAddress() {
-    navigator.clipboard?.writeText('0x4a19…c82f')
+    navigator.clipboard?.writeText(walletAddress)
     setCopied(true)
     setTimeout(() => setCopied(false), 1600)
+  }
+
+  async function generateProof() {
+    if (!authToken && !connected) { setProofStatus('Connect your wallet first.'); return }
+    if (!assetReference.trim()) { setProofStatus('Enter an asset reference.'); return }
+    setBusy(true)
+    try {
+      const api = process.env.NEXT_PUBLIC_API_URL ?? ''
+      const response = await fetch(`${api}/prove-async`, { method: 'POST', headers: { 'content-type': 'application/json', ...(authToken ? { authorization: `Bearer ${authToken}` } : {}) }, credentials: 'include', body: JSON.stringify({ claimId: assetReference.trim() }) })
+      const result = await response.json() as { jobId?: string; error?: string }
+      if (!response.ok) throw new Error(result.error ?? 'Could not queue proof')
+      setProofStatus(`Proof queued: ${result.jobId}`)
+      setAttestationOpen(false)
+    } catch (error) { setProofStatus(error instanceof Error ? error.message : 'Proof request failed.') }
+    finally { setBusy(false) }
   }
 
   return (
@@ -58,7 +104,7 @@ export default function Page() {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden items-center gap-2 rounded-full border border-[#dce5e4] bg-[#f4fbf8] px-3 py-1.5 text-[11px] font-semibold text-[#168568] sm:flex"><span className="size-1.5 rounded-full bg-[#20b486]" /> VeChain Testnet</span>
-            <button onClick={() => setConnected(!connected)} className="hidden items-center gap-2 rounded-lg bg-[#142641] px-3.5 py-2 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#20395c] sm:flex"><Wallet size={14} /> {connected ? '0x4a19…c82f' : 'Connect wallet'} <ChevronDown size={13} /></button>
+            <button onClick={connectWallet} disabled={busy} className="hidden items-center gap-2 rounded-lg bg-[#142641] px-3.5 py-2 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#20395c] disabled:opacity-60 sm:flex"><Wallet size={14} /> {connected ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-4)}` : 'Connect wallet'} <ChevronDown size={13} /></button>
             <button className="rounded-lg p-2 text-[#65738a] md:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">{mobileOpen ? <X /> : <Menu />}</button>
           </div>
         </div>
@@ -95,9 +141,9 @@ export default function Page() {
       {attestationOpen && <div className="fixed inset-0 z-50 grid place-items-center bg-[#142641]/40 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="attestation-title">
         <div className="w-full max-w-lg rounded-2xl border border-[#e3e8ef] bg-white p-6 shadow-2xl">
           <div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#20a980]">VeChain testnet</p><h2 id="attestation-title" className="mt-1 text-xl font-semibold tracking-[-0.03em] text-[#142641]">Create a private attestation</h2><p className="mt-1 text-xs leading-5 text-[#7c899b]">Generate a selective-disclosure proof without publishing the underlying supply-chain data.</p></div><button onClick={() => setAttestationOpen(false)} aria-label="Close dialog" className="rounded-md p-1 text-[#8390a2] hover:bg-[#f1f4f7]"><X /></button></div>
-          <div className="mt-6 grid gap-3"><label className="grid gap-1.5 text-[11px] font-semibold text-[#526177]">Asset reference<input className="rounded-lg border border-[#dfe6ed] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#20b486]" placeholder="e.g. LOT-1842" /></label><label className="grid gap-1.5 text-[11px] font-semibold text-[#526177]">Proof claims<select className="rounded-lg border border-[#dfe6ed] bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-[#20b486]"><option>Authenticity + cold-chain compliance</option><option>Origin + carbon footprint</option><option>Regulatory compliance</option></select></label></div>
-          <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#f0faf6] px-3 py-2.5 text-[11px] text-[#347b68]"><ShieldCheck size={15} /> Private witness data stays off-chain; only the proof commitment is anchored.</div>
-          <div className="mt-6 flex justify-end gap-2"><button onClick={() => setAttestationOpen(false)} className="rounded-lg px-3.5 py-2 text-[12px] font-semibold text-[#66758a] hover:bg-[#f1f4f7]">Cancel</button><button onClick={() => setAttestationOpen(false)} className="rounded-lg bg-[#142641] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#20395c]">Generate ZK proof</button></div>
+          <div className="mt-6 grid gap-3"><label className="grid gap-1.5 text-[11px] font-semibold text-[#526177]">Claim ID<input value={assetReference} onChange={(event) => setAssetReference(event.target.value)} className="rounded-lg border border-[#dfe6ed] px-3 py-2.5 text-sm font-normal outline-none focus:border-[#20b486]" placeholder="e.g. claim-1842" /></label><label className="grid gap-1.5 text-[11px] font-semibold text-[#526177]">Proof claims<select className="rounded-lg border border-[#dfe6ed] bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-[#20b486]"><option>Authenticity + cold-chain compliance</option><option>Origin + carbon footprint</option><option>Regulatory compliance</option></select></label></div>
+          <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#f0faf6] px-3 py-2.5 text-[11px] text-[#347b68]"><ShieldCheck size={15} /> Private witness data stays off-chain; only the proof commitment is anchored.</div>{proofStatus && <p role="status" className="mt-3 text-[11px] text-[#637188]">{proofStatus}</p>}
+          <div className="mt-6 flex justify-end gap-2"><button onClick={() => setAttestationOpen(false)} className="rounded-lg px-3.5 py-2 text-[12px] font-semibold text-[#66758a] hover:bg-[#f1f4f7]">Cancel</button><button onClick={generateProof} disabled={busy} className="rounded-lg bg-[#142641] px-3.5 py-2 text-[12px] font-semibold text-white hover:bg-[#20395c] disabled:opacity-60">{busy ? 'Submitting…' : 'Generate ZK proof'}</button></div>
         </div>
       </div>}
     </main>
