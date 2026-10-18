@@ -10,7 +10,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 ROOT_HEX="$1"
-SIGNED_OUT="${SIGNED_OUT:-signed_tx.txt}"
+SIGNED_OUT="${2:-${SIGNED_OUT:-signed_tx.txt}}"
 
 node -e '
 const fs = require("fs")
